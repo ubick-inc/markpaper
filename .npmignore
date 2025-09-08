@@ -1,0 +1,33 @@
+# Source files
+src/
+tests/
+examples/
+markpaper/
+
+# Config files
+tsconfig.json
+jest.config.js
+.gitignore
+CLAUDE.md
+
+# Generated files
+*.pdf
+test-output.pdf
+sample-output.pdf
+
+# Development
+node_modules/
+*.log
+.DS_Store
+coverage/
+.vscode/
+.idea/
+
+# Git
+.git/
+.github/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

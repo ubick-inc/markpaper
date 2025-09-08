@@ -1,8 +1,14 @@
 # MarkPaper
 
-<img width="1024" height="1024" alt="markpaper_logo_whiteback" src="https://github.com/user-attachments/assets/ddae1346-82c9-4b69-b991-c1e9fc1963aa" />
+<img width="512" height="512" alt="markpaper_logo_whiteback" src="https://github.com/user-attachments/assets/ddae1346-82c9-4b69-b991-c1e9fc1963aa" />
 
-Beautiful Markdown to PDF converter
+[![npm version](https://badge.fury.io/js/markpaper.svg)](https://badge.fury.io/js/markpaper)
+[![Test](https://github.com/ubick-inc/markpaper/actions/workflows/test.yml/badge.svg)](https://github.com/ubick-inc/markpaper/actions/workflows/test.yml)
+[![Publish](https://github.com/ubick-inc/markpaper/actions/workflows/publish.yml/badge.svg)](https://github.com/ubick-inc/markpaper/actions/workflows/publish.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/node/v/markpaper.svg)](https://nodejs.org)
+
+Beautiful Markdown to PDF converter with automatic page breaks, Mermaid diagrams, and Japanese font support
 
 ## Concept
 
@@ -17,8 +23,22 @@ A tool that converts your everyday Markdown into beautiful PDFs that are familia
 
 ## Installation
 
+### Global Installation (Recommended)
+
 ```bash
 npm install -g markpaper
+```
+
+### Local Installation
+
+```bash
+npm install markpaper
+```
+
+### Using npx (without installation)
+
+```bash
+npx markpaper input.md
 ```
 
 ## Usage
@@ -75,7 +95,7 @@ module.exports = {
 ## Development
 
 ```bash
-git clone https://github.com/your-username/markpaper.git
+git clone https://github.com/ubick-inc/markpaper.git
 cd markpaper
 npm install
 npm run dev

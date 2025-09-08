@@ -1,10 +1,24 @@
 {
   "name": "markpaper",
-  "version": "1.0.0",
-  "description": "Beautiful Markdown to PDF converter",
+  "version": "0.1.1",
+  "description": "Beautiful Markdown to PDF converter with automatic page breaks, Mermaid support, and Japanese font handling",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "markpaper": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ubick-inc/markpaper.git"
+  },
+  "homepage": "https://github.com/ubick-inc/markpaper#readme",
+  "bugs": {
+    "url": "https://github.com/ubick-inc/markpaper/issues"
   },
   "scripts": {
     "build": "tsc && mkdir -p dist/styles && cp src/styles/*.css dist/styles/",
@@ -23,9 +37,13 @@
     "converter",
     "vivliostyle",
     "mermaid",
-    "typescript"
+    "typescript",
+    "japanese",
+    "cjk",
+    "page-break",
+    "cli"
   ],
-  "author": "Your Name",
+  "author": "jshimazu",
   "license": "MIT",
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
