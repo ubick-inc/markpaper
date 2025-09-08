@@ -20,26 +20,50 @@ export class MermaidProcessor {
   private async initBrowser(): Promise<void> {
     if (!this.browser) {
       this.logger.debugLog('Launching puppeteer browser for Mermaid rendering');
-      try {
-        this.browser = await puppeteer.launch({
-          headless: 'new',
+      
+      // Try different launch configurations in order of preference
+      const launchConfigs = [
+        // First try: Standard configuration
+        {
+          headless: 'new' as const,
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--no-zygote',
-            '--single-process'
+            '--disable-gpu'
           ]
-        });
-      } catch (error) {
-        this.logger.error(`Failed to launch Puppeteer: ${error}`);
-        // Try with simpler settings
-        this.browser = await puppeteer.launch({
-          headless: 'new',
+        },
+        // Second try: Minimal configuration
+        {
+          headless: 'new' as const,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        },
+        // Third try: Legacy headless mode
+        {
+          headless: true as const,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        },
+        // Last resort: Bare minimum
+        {
+          headless: 'new' as const,
           args: ['--no-sandbox']
-        });
+        }
+      ];
+
+      let lastError: Error | null = null;
+      for (const config of launchConfigs) {
+        try {
+          this.logger.debugLog(`Trying Puppeteer launch with config: ${JSON.stringify(config.args)}`);
+          this.browser = await puppeteer.launch(config);
+          this.logger.debugLog('Puppeteer launched successfully');
+          return;
+        } catch (error) {
+          lastError = error as Error;
+          this.logger.debugLog(`Puppeteer launch failed with config ${JSON.stringify(config.args)}: ${error}`);
+        }
       }
+      
+      throw new Error(`Failed to launch Puppeteer after trying all configurations. Last error: ${lastError?.message}`);
     }
   }
 
