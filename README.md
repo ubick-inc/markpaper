@@ -1,5 +1,7 @@
 # MarkPaper
 
+<img width="1024" height="1024" alt="markpaper_logo_whiteback" src="https://github.com/user-attachments/assets/ddae1346-82c9-4b69-b991-c1e9fc1963aa" />
+
 Beautiful Markdown to PDF converter
 
 ## Concept
