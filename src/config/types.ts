@@ -20,7 +20,22 @@ export interface PageBreakConfig {
   avoidInside?: string[];
 }
 
+export interface MermaidCaptionConfig {
+  /** Whether to enable automatic captions */
+  enabled?: boolean;
+  /** Caption prefix (e.g., "図", "Figure") */
+  prefix?: string;
+  /** Caption format template (e.g., "{prefix} {number}: {title}") */
+  format?: string;
+  /** Whether to auto-number diagrams */
+  autoNumber?: boolean;
+  /** Whether to extract title from diagram content */
+  extractTitle?: boolean;
+}
+
 export interface MermaidConfig {
+  /** Whether to enable Mermaid processing */
+  enabled?: boolean;
   /** Mermaid theme */
   theme?: 'default' | 'dark' | 'forest' | 'neutral';
   /** Diagram width in pixels */
@@ -29,6 +44,8 @@ export interface MermaidConfig {
   backgroundColor?: string;
   /** Scale factor */
   scale?: number;
+  /** Caption configuration */
+  captions?: MermaidCaptionConfig;
 }
 
 export interface PageConfig {

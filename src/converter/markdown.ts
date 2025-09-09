@@ -5,6 +5,7 @@ import { Logger } from '../utils/logger';
 export class MarkdownConverter {
   private config: MarkPaperConfig;
   private logger: Logger;
+  private mermaidCounter: number = 0;
 
   constructor(config: MarkPaperConfig, logger: Logger) {
     this.config = config;
@@ -89,18 +90,92 @@ export class MarkdownConverter {
   }
 
   /**
+   * Extract title from mermaid diagram content
+   */
+  private extractMermaidTitle(content: string): string | null {
+    // Try to extract title from various formats
+    const titlePatterns = [
+      /title\s*:\s*"([^"]+)"/,      // title: "Title"
+      /title\s*:\s*'([^']+)'/,      // title: 'Title'
+      /title\s*:\s*([^\n]+)/,       // title: Title
+      /title\s*\[\s*"([^"]+)"\s*\]/, // title["Title"]
+      /title\s*\[\s*'([^']+)'\s*\]/, // title['Title']
+      /title\s*\[\s*([^\]]+)\s*\]/,  // title[Title]
+      /%%{.*title:\s*"([^"]+)".*}%%/, // %%{config: { title: "Title" }}%%
+      /%%{.*title:\s*'([^']+)'.*}%%/  // %%{config: { title: 'Title' }}%%
+    ];
+
+    for (const pattern of titlePatterns) {
+      const match = content.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Generate caption for mermaid diagram
+   */
+  private generateMermaidCaption(title: string | null, number: number): string {
+    const captionConfig = this.config.mermaid?.captions;
+    if (!captionConfig?.enabled) {
+      return '';
+    }
+
+    const prefix = captionConfig.prefix || '図';
+    const format = captionConfig.format || '{prefix} {number}: {title}';
+    const displayTitle = title || '';
+
+    // Replace placeholders in format
+    let caption = format
+      .replace('{prefix}', prefix)
+      .replace('{number}', number.toString())
+      .replace('{title}', displayTitle);
+
+    // Remove trailing colon and space if no title
+    if (!displayTitle && caption.endsWith(': ')) {
+      caption = caption.slice(0, -2);
+    }
+
+    return caption;
+  }
+
+  /**
    * Extract mermaid diagrams from markdown
    */
-  extractMermaidDiagrams(markdown: string): Array<{ id: string; content: string }> {
-    const mermaidBlocks: Array<{ id: string; content: string }> = [];
+  extractMermaidDiagrams(markdown: string): Array<{ id: string; content: string; title?: string; caption?: string }> {
+    const mermaidBlocks: Array<{ id: string; content: string; title?: string; caption?: string }> = [];
     const mermaidRegex = /```mermaid\n([\s\S]*?)\n```/g;
     let match;
     let index = 0;
 
+    // Reset counter for new document
+    this.mermaidCounter = 0;
+
     while ((match = mermaidRegex.exec(markdown)) !== null) {
+      const content = match[1].trim();
+      const captionConfig = this.config.mermaid?.captions;
+      let title: string | undefined;
+      let caption: string | undefined;
+
+      if (captionConfig?.enabled) {
+        if (captionConfig.extractTitle) {
+          title = this.extractMermaidTitle(content) || undefined;
+        }
+
+        if (captionConfig.autoNumber) {
+          this.mermaidCounter++;
+          caption = this.generateMermaidCaption(title || null, this.mermaidCounter);
+        }
+      }
+
       mermaidBlocks.push({
         id: `mermaid-${index++}`,
-        content: match[1].trim()
+        content,
+        title,
+        caption
       });
     }
 
@@ -111,17 +186,31 @@ export class MarkdownConverter {
   /**
    * Replace mermaid blocks with placeholder divs
    */
-  replaceMermaidBlocks(html: string, diagrams: Array<{ id: string; imageUrl: string }>): string {
+  replaceMermaidBlocks(html: string, diagrams: Array<{ id: string; imageUrl: string; caption?: string }>): string {
     let result = html;
     
-    diagrams.forEach(({ id, imageUrl }) => {
-      const placeholder = `<div class="mermaid-container avoid-page-break">
-          <div class="mermaid">[Mermaid diagram ${id}]</div>
+    // Extract all mermaid blocks from the HTML
+    const mermaidRegex = /<div class="mermaid-container avoid-page-break">\s*<div class="mermaid">([\s\S]*?)<\/div>\s*<\/div>/g;
+    let match;
+    let index = 0;
+    
+    // Replace each mermaid block with corresponding image
+    result = result.replace(mermaidRegex, (fullMatch, mermaidContent) => {
+      if (index < diagrams.length) {
+        const diagram = diagrams[index];
+        index++;
+        
+        let captionHtml = '';
+        if (diagram.caption) {
+          captionHtml = `<div class="mermaid-caption">${diagram.caption}</div>`;
+        }
+        
+        return `<div class="mermaid-container avoid-page-break">
+          <img src="${diagram.imageUrl}" alt="Mermaid diagram ${diagram.id}" class="mermaid-image" />
+          ${captionHtml}
         </div>`;
-      const replacement = `<div class="mermaid-container avoid-page-break">
-          <img src="${imageUrl}" alt="Mermaid diagram ${id}" class="mermaid-image" />
-        </div>`;
-      result = result.replace(placeholder, replacement);
+      }
+      return fullMatch; // Return original if no diagram available
     });
 
     return result;
