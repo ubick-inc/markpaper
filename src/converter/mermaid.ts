@@ -21,36 +21,77 @@ export class MermaidProcessor {
     if (!this.browser) {
       this.logger.debugLog('Launching puppeteer browser for Mermaid rendering');
       
+      const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+      this.logger.debugLog(`Running in CI environment: ${isCI}`);
+      
       // Try different launch configurations in order of preference
-      const launchConfigs = [
-        // First try: Use system Chrome with specific executable path (macOS)
-        {
-          executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-          headless: 'new' as const,
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--disable-web-security',
-            '--disable-features=IsolateOrigins,site-per-process'
-          ]
-        },
-        // Second try: Default Puppeteer with minimal args
-        {
-          headless: 'new' as const,
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage'
-          ]
-        },
-        // Third try: Legacy headless mode
-        {
-          headless: true as const,
-          args: ['--no-sandbox', '--disable-setuid-sandbox']
-        }
-      ];
+      const launchConfigs = [];
+      
+      if (isCI) {
+        // CI-specific configurations with longer timeouts and more stable settings
+        launchConfigs.push(
+          // CI configuration: Most stable for headless CI environments
+          {
+            headless: 'new' as const,
+            timeout: 60000, // Increased timeout for CI
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-gpu',
+              '--disable-background-timer-throttling',
+              '--disable-backgrounding-occluded-windows',
+              '--disable-renderer-backgrounding',
+              '--disable-features=TranslateUI',
+              '--disable-ipc-flooding-protection',
+              '--single-process' // Use single process in CI to avoid issues
+            ]
+          },
+          // Fallback CI configuration
+          {
+            headless: true as const,
+            timeout: 60000,
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-gpu',
+              '--single-process'
+            ]
+          }
+        );
+      } else {
+        // Local development configurations
+        launchConfigs.push(
+          // First try: Use system Chrome with specific executable path (macOS)
+          {
+            executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            headless: 'new' as const,
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-gpu',
+              '--disable-web-security',
+              '--disable-features=IsolateOrigins,site-per-process'
+            ]
+          },
+          // Second try: Default Puppeteer with minimal args
+          {
+            headless: 'new' as const,
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage'
+            ]
+          },
+          // Third try: Legacy headless mode
+          {
+            headless: true as const,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+          }
+        );
+      }
 
       let lastError: Error | null = null;
       for (const config of launchConfigs) {
@@ -148,8 +189,10 @@ export class MermaidProcessor {
       const html = this.createMermaidHTML(diagram.content);
       await page.setContent(html);
 
-      // Wait for mermaid to render
-      await page.waitForSelector('#mermaid-diagram svg', { timeout: 10000 });
+      // Wait for mermaid to render with appropriate timeout
+      const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+      const timeout = isCI ? 30000 : 10000; // Longer timeout in CI
+      await page.waitForSelector('#mermaid-diagram svg', { timeout });
 
       // Get the SVG element dimensions
       const svgElement = await page.$('#mermaid-diagram svg');

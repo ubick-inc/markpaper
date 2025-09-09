@@ -21,7 +21,7 @@
     "url": "https://github.com/ubick-inc/markpaper/issues"
   },
   "scripts": {
-    "build": "tsc && mkdir -p dist/styles && cp src/styles/*.css dist/styles/",
+    "build": "tsc && node -e \"const fs=require('fs'),path=require('path');const srcDir='src/styles',distDir='dist/styles';!fs.existsSync(distDir)&&fs.mkdirSync(distDir,{recursive:true});fs.readdirSync(srcDir).filter(f=>f.endsWith('.css')).forEach(f=>fs.copyFileSync(path.join(srcDir,f),path.join(distDir,f)))\"",
     "dev": "tsc --watch",
     "start": "node dist/cli.js",
     "test": "jest",
