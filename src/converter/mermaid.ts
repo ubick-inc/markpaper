@@ -20,26 +20,58 @@ export class MermaidProcessor {
   private async initBrowser(): Promise<void> {
     if (!this.browser) {
       this.logger.debugLog('Launching puppeteer browser for Mermaid rendering');
-      try {
-        this.browser = await puppeteer.launch({
-          headless: 'new',
+      
+      // Try different launch configurations in order of preference
+      const launchConfigs = [
+        // First try: Use system Chrome with specific executable path (macOS)
+        {
+          executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+          headless: 'new' as const,
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-gpu',
-            '--no-zygote',
-            '--single-process'
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process'
           ]
-        });
-      } catch (error) {
-        this.logger.error(`Failed to launch Puppeteer: ${error}`);
-        // Try with simpler settings
-        this.browser = await puppeteer.launch({
-          headless: 'new',
-          args: ['--no-sandbox']
-        });
+        },
+        // Second try: Default Puppeteer with minimal args
+        {
+          headless: 'new' as const,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage'
+          ]
+        },
+        // Third try: Legacy headless mode
+        {
+          headless: true as const,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        }
+      ];
+
+      let lastError: Error | null = null;
+      for (const config of launchConfigs) {
+        try {
+          const configDesc = 'executablePath' in config ? 
+            `executablePath: ${config.executablePath}` : 
+            `args: ${JSON.stringify(config.args)}`;
+          this.logger.debugLog(`Trying Puppeteer launch with ${configDesc}`);
+          this.browser = await puppeteer.launch(config);
+          this.logger.debugLog('Puppeteer launched successfully');
+          return;
+        } catch (error) {
+          lastError = error as Error;
+          const configDesc = 'executablePath' in config ? 
+            `executablePath: ${config.executablePath}` : 
+            `args: ${JSON.stringify(config.args)}`;
+          this.logger.debugLog(`Puppeteer launch failed with ${configDesc}: ${error}`);
+        }
       }
+      
+      throw new Error(`Failed to launch Puppeteer after trying all configurations. Last error: ${lastError?.message}`);
     }
   }
 
@@ -105,11 +137,11 @@ export class MermaidProcessor {
     const page: Page = await this.browser.newPage();
     
     try {
-      // Set viewport
+      // Set viewport with higher resolution for better quality
       await page.setViewport({
-        width: this.config.width || 800,
-        height: 600,
-        deviceScaleFactor: this.config.scale || 1
+        width: this.config.width || 1600,  // Increased width for better resolution
+        height: 1200,  // Increased height
+        deviceScaleFactor: this.config.scale || 2  // Higher scale factor for sharper images
       });
 
       // Create HTML content with mermaid
@@ -151,13 +183,23 @@ export class MermaidProcessor {
         <style>
           body {
             margin: 0;
-            padding: 20px;
-            background: ${this.config.backgroundColor || 'transparent'};
+            padding: 40px;
+            background: ${this.config.backgroundColor || 'white'};
+            width: 100%;
           }
           #mermaid-diagram {
             display: flex;
             justify-content: center;
             align-items: center;
+            width: 100%;
+          }
+          .mermaid {
+            width: 100%;
+            max-width: 1400px;
+          }
+          .mermaid svg {
+            max-width: 100%;
+            height: auto;
           }
         </style>
       </head>
