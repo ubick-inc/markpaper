@@ -217,6 +217,112 @@ describe('MarkPaper CLI E2E Tests', () => {
     });
   });
 
+  describe('Japanese content and Mermaid diagrams', () => {
+    const japaneseOutputPath = join(tempDir, 'japanese-test.pdf');
+    
+    afterEach(() => {
+      // Clean up generated files
+      if (existsSync(japaneseOutputPath)) {
+        unlinkSync(japaneseOutputPath);
+      }
+    });
+
+    it('should generate PDF from Japanese technical document with Mermaid diagrams', async () => {
+      const inputPath = join(__dirname, '../../examples/mobile-order-system-ja.md');
+      
+      const { stdout, stderr } = await execAsync(
+        `node ${cliPath} ${inputPath} -o ${japaneseOutputPath} --debug`,
+        { timeout: 60000 } // Increased timeout for complex document
+      );
+
+      console.log('Japanese PDF test output:', stdout);
+      if (stderr) console.log('Japanese PDF test stderr:', stderr);
+
+      // Check for success message
+      expect(stdout).toContain('PDF generated successfully');
+      
+      // Check that PDF file was created
+      expect(existsSync(japaneseOutputPath)).toBe(true);
+      
+      // Check that PDF has substantial content (should be large due to multiple pages)
+      const fileStats = readFileSync(japaneseOutputPath);
+      expect(fileStats.length).toBeGreaterThan(50000); // Should be substantial for multi-page document
+      
+      console.log(`📄 Japanese PDF generated at: ${japaneseOutputPath}`);
+      console.log(`📊 PDF size: ${(fileStats.length / 1024).toFixed(1)}KB`);
+    });
+
+    it('should handle Japanese fonts properly', async () => {
+      const inputPath = join(__dirname, '../../examples/mobile-order-system-ja.md');
+      const customOutput = join(tempDir, 'japanese-font-test.pdf');
+      
+      const { stdout } = await execAsync(
+        `node ${cliPath} ${inputPath} -o ${customOutput} --font-main "Noto Sans CJK JP"`,
+        { timeout: 60000 }
+      );
+
+      expect(stdout).toContain('PDF generated successfully');
+      expect(existsSync(customOutput)).toBe(true);
+      
+      const fileStats = readFileSync(customOutput);
+      expect(fileStats.length).toBeGreaterThan(50000);
+      
+      console.log(`🈶 Japanese font PDF generated at: ${customOutput}`);
+      
+      // Clean up
+      if (existsSync(customOutput)) {
+        unlinkSync(customOutput);
+      }
+    });
+
+    it('should properly handle page breaks with Japanese headings', async () => {
+      const inputPath = join(__dirname, '../../examples/mobile-order-system-ja.md');
+      const pageBreakOutput = join(tempDir, 'japanese-pagebreak-test.pdf');
+      
+      // Create config for testing page breaks
+      const configPath = join(tempDir, 'pagebreak-config.js');
+      const configContent = `
+        module.exports = {
+          output: '${pageBreakOutput}',
+          pageBreak: {
+            beforeH1: true,
+            beforeH2: true,
+            avoidBreakInside: ['table', 'pre', 'blockquote']
+          },
+          font: {
+            main: 'Noto Sans CJK JP',
+            size: 12
+          }
+        };
+      `;
+      writeFileSync(configPath, configContent);
+      
+      try {
+        const { stdout } = await execAsync(
+          `node ${cliPath} ${inputPath} -c ${configPath} --debug`,
+          { timeout: 60000 }
+        );
+
+        expect(stdout).toContain('PDF generated successfully');
+        expect(existsSync(pageBreakOutput)).toBe(true);
+        
+        const fileStats = readFileSync(pageBreakOutput);
+        expect(fileStats.length).toBeGreaterThan(50000);
+        
+        console.log(`📑 Japanese page break PDF generated at: ${pageBreakOutput}`);
+        console.log(`📏 Page break PDF size: ${(fileStats.length / 1024).toFixed(1)}KB`);
+      } finally {
+        // Clean up
+        if (existsSync(pageBreakOutput)) {
+          unlinkSync(pageBreakOutput);
+        }
+        if (existsSync(configPath)) {
+          unlinkSync(configPath);
+        }
+      }
+    });
+  });
+
   describe('Debug mode', () => {
     it('should show debug output when --debug flag is used', async () => {
       const inputPath = join(fixturesDir, 'simple.md');

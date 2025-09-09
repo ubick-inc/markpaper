@@ -36,9 +36,10 @@ program
   .option('--page-break-h1', 'Insert page break before H1 headings')
   .option('--page-break-h2', 'Insert page break before H2 headings')
   .option('--page-break-h3', 'Insert page break before H3 headings')
-  .option('--mermaid-theme <theme>', 'Mermaid theme (default, dark, forest, neutral)', 'default')
+  .option('--mermaid-theme <theme>', 'Mermaid theme (default, base, dark, forest, neutral)', 'base')
   .option('--mermaid-width <width>', 'Mermaid diagram width in pixels', parseInt)
   .option('--mermaid-background <color>', 'Mermaid background color')
+  .option('--no-mermaid', 'Skip Mermaid diagram processing')
   .option('--css <path>', 'Custom CSS file path')
   .option('--theme <name>', 'Theme name')
   .option('--debug', 'Enable debug mode')
@@ -103,9 +104,16 @@ program
       }
 
       // Mermaid options
-      if (options.mermaidTheme || options.mermaidWidth || options.mermaidBackground) {
+      if (options.mermaid === false) {
+        // If --no-mermaid is used, disable mermaid processing
         cliOptions.mermaid = {
           ...(config.mermaid || {}),
+          enabled: false
+        };
+      } else if (options.mermaidTheme || options.mermaidWidth || options.mermaidBackground) {
+        cliOptions.mermaid = {
+          ...(config.mermaid || {}),
+          enabled: true,
           ...(options.mermaidTheme && { theme: options.mermaidTheme }),
           ...(options.mermaidWidth && { width: options.mermaidWidth }),
           ...(options.mermaidBackground && { backgroundColor: options.mermaidBackground })

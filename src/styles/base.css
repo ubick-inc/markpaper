@@ -198,6 +198,21 @@ hr {
   break-after: avoid;
 }
 
+/* Mermaid Diagrams */
+.mermaid-container {
+  margin: 1.5em 0;
+  text-align: center;
+  break-inside: avoid;
+  width: 100%;
+}
+
+.mermaid-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
 /* Links (for potential web view) */
 a {
   color: #0066cc;

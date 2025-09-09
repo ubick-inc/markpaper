@@ -114,14 +114,21 @@ export class MarkdownConverter {
   replaceMermaidBlocks(html: string, diagrams: Array<{ id: string; imageUrl: string }>): string {
     let result = html;
     
-    diagrams.forEach(({ id, imageUrl }) => {
-      const placeholder = `<div class="mermaid-container avoid-page-break">
-          <div class="mermaid">[Mermaid diagram ${id}]</div>
+    // Extract all mermaid blocks from the HTML
+    const mermaidRegex = /<div class="mermaid-container avoid-page-break">\s*<div class="mermaid">([\s\S]*?)<\/div>\s*<\/div>/g;
+    let match;
+    let index = 0;
+    
+    // Replace each mermaid block with corresponding image
+    result = result.replace(mermaidRegex, (fullMatch, mermaidContent) => {
+      if (index < diagrams.length) {
+        const diagram = diagrams[index];
+        index++;
+        return `<div class="mermaid-container avoid-page-break">
+          <img src="${diagram.imageUrl}" alt="Mermaid diagram ${diagram.id}" class="mermaid-image" />
         </div>`;
-      const replacement = `<div class="mermaid-container avoid-page-break">
-          <img src="${imageUrl}" alt="Mermaid diagram ${id}" class="mermaid-image" />
-        </div>`;
-      result = result.replace(placeholder, replacement);
+      }
+      return fullMatch; // Return original if no diagram available
     });
 
     return result;
