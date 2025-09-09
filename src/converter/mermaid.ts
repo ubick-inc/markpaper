@@ -174,6 +174,48 @@ export class MermaidProcessor {
    * Create HTML template for mermaid rendering
    */
   private createMermaidHTML(mermaidContent: string): string {
+    const layout = this.config.layout || {};
+    
+    // Prepare mermaid configuration
+    const mermaidConfig = {
+      theme: this.config.theme || 'default',
+      startOnLoad: true,
+      securityLevel: 'loose',
+      flowchart: {
+        nodeSpacing: layout.nodeSpacing || 80,
+        rankSpacing: layout.rankSpacing || 100,
+        curve: layout.curveStyle || 'cardinal',
+        padding: layout.padding || 30,
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      sequence: {
+        actorMargin: layout.nodeSpacing ? layout.nodeSpacing + 20 : 100,
+        boxMargin: 20,
+        boxTextMargin: 10,
+        noteMargin: 20,
+        messageMargin: layout.rankSpacing ? layout.rankSpacing / 2 : 50
+      },
+      gantt: {
+        leftPadding: 120,
+        gridLineStartPadding: 120,
+        fontSize: 12,
+        sectionFontSize: 14
+      }
+    };
+
+    // Handle ELK renderer configuration
+    let elkDirective = '';
+    if (layout.useElkRenderer) {
+      const elkConfig: any = {
+        defaultRenderer: 'elk'
+      };
+      if (layout.mergeEdges !== undefined) {
+        elkConfig.mergeEdges = layout.mergeEdges;
+      }
+      elkDirective = `%%{init: {"flowchart": ${JSON.stringify(elkConfig)}}}%%\n`;
+    }
+
     return `
       <!DOCTYPE html>
       <html>
@@ -183,7 +225,7 @@ export class MermaidProcessor {
         <style>
           body {
             margin: 0;
-            padding: 40px;
+            padding: ${layout.padding || 40}px;
             background: ${this.config.backgroundColor || 'white'};
             width: 100%;
           }
@@ -206,15 +248,11 @@ export class MermaidProcessor {
       <body>
         <div id="mermaid-diagram">
           <div class="mermaid">
-            ${mermaidContent}
+            ${elkDirective}${mermaidContent}
           </div>
         </div>
         <script>
-          mermaid.initialize({
-            theme: '${this.config.theme || 'default'}',
-            startOnLoad: true,
-            securityLevel: 'loose'
-          });
+          mermaid.initialize(${JSON.stringify(mermaidConfig, null, 2)});
         </script>
       </body>
       </html>

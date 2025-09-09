@@ -39,6 +39,12 @@ program
   .option('--mermaid-theme <theme>', 'Mermaid theme (default, dark, forest, neutral)', 'default')
   .option('--mermaid-width <width>', 'Mermaid diagram width in pixels', parseInt)
   .option('--mermaid-background <color>', 'Mermaid background color')
+  .option('--mermaid-node-spacing <spacing>', 'Minimum spacing between nodes in pixels', parseInt)
+  .option('--mermaid-rank-spacing <spacing>', 'Spacing between different levels/ranks in pixels', parseInt)
+  .option('--mermaid-curve-style <style>', 'Curve style for connections (cardinal, linear, basis, etc.)')
+  .option('--mermaid-padding <padding>', 'Padding around the diagram in pixels', parseInt)
+  .option('--mermaid-elk-renderer', 'Use ELK renderer for better layout optimization')
+  .option('--mermaid-merge-edges', 'Merge parallel edges to reduce clutter')
   .option('--no-mermaid', 'Skip Mermaid diagram processing')
   .option('--css <path>', 'Custom CSS file path')
   .option('--theme <name>', 'Theme name')
@@ -110,13 +116,31 @@ program
           ...(config.mermaid || {}),
           enabled: false
         };
-      } else if (options.mermaidTheme || options.mermaidWidth || options.mermaidBackground) {
+      } else if (options.mermaidTheme || options.mermaidWidth || options.mermaidBackground ||
+                 options.mermaidNodeSpacing || options.mermaidRankSpacing || options.mermaidCurveStyle ||
+                 options.mermaidPadding || options.mermaidElkRenderer || options.mermaidMergeEdges) {
+        
+        // Build layout configuration
+        const layoutConfig: any = {};
+        if (options.mermaidNodeSpacing) layoutConfig.nodeSpacing = options.mermaidNodeSpacing;
+        if (options.mermaidRankSpacing) layoutConfig.rankSpacing = options.mermaidRankSpacing;
+        if (options.mermaidCurveStyle) layoutConfig.curveStyle = options.mermaidCurveStyle;
+        if (options.mermaidPadding) layoutConfig.padding = options.mermaidPadding;
+        if (options.mermaidElkRenderer) layoutConfig.useElkRenderer = true;
+        if (options.mermaidMergeEdges) layoutConfig.mergeEdges = true;
+
         cliOptions.mermaid = {
           ...(config.mermaid || {}),
           enabled: true,
           ...(options.mermaidTheme && { theme: options.mermaidTheme }),
           ...(options.mermaidWidth && { width: options.mermaidWidth }),
-          ...(options.mermaidBackground && { backgroundColor: options.mermaidBackground })
+          ...(options.mermaidBackground && { backgroundColor: options.mermaidBackground }),
+          ...(Object.keys(layoutConfig).length > 0 && { 
+            layout: { 
+              ...(config.mermaid?.layout || {}), 
+              ...layoutConfig 
+            } 
+          })
         };
       }
 
