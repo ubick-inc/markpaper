@@ -21,6 +21,8 @@ export interface PageBreakConfig {
 }
 
 export interface MermaidConfig {
+  /** Whether to enable Mermaid processing */
+  enabled?: boolean;
   /** Mermaid theme */
   theme?: 'default' | 'dark' | 'forest' | 'neutral';
   /** Diagram width in pixels */
