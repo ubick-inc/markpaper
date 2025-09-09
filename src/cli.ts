@@ -36,7 +36,7 @@ program
   .option('--page-break-h1', 'Insert page break before H1 headings')
   .option('--page-break-h2', 'Insert page break before H2 headings')
   .option('--page-break-h3', 'Insert page break before H3 headings')
-  .option('--mermaid-theme <theme>', 'Mermaid theme (default, dark, forest, neutral)', 'default')
+  .option('--mermaid-theme <theme>', 'Mermaid theme (default, base, dark, forest, neutral)', 'base')
   .option('--mermaid-width <width>', 'Mermaid diagram width in pixels', parseInt)
   .option('--mermaid-background <color>', 'Mermaid background color')
   .option('--no-mermaid', 'Skip Mermaid diagram processing')

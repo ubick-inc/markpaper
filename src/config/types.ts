@@ -24,7 +24,21 @@ export interface MermaidConfig {
   /** Whether to enable Mermaid processing */
   enabled?: boolean;
   /** Mermaid theme */
-  theme?: 'default' | 'dark' | 'forest' | 'neutral';
+  theme?: 'default' | 'base' | 'dark' | 'forest' | 'neutral';
+  /** Custom theme variables for enhanced styling */
+  themeVariables?: {
+    primaryColor?: string;
+    primaryTextColor?: string;
+    primaryBorderColor?: string;
+    secondaryColor?: string;
+    secondaryTextColor?: string;
+    secondaryBorderColor?: string;
+    background?: string;
+    lineColor?: string;
+    fontFamily?: string;
+    fontSize?: string;
+    [key: string]: string | undefined;
+  };
   /** Diagram width in pixels */
   width?: number;
   /** Background color */

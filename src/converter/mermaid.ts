@@ -174,6 +174,78 @@ export class MermaidProcessor {
    * Create HTML template for mermaid rendering
    */
   private createMermaidHTML(mermaidContent: string): string {
+    // Get the effective theme (defaulting to 'base' for modern styling)
+    const theme = this.config.theme || 'base';
+    
+    // Create modern theme variables if using base theme and no custom variables provided
+    const defaultModernThemeVariables = theme === 'base' && !this.config.themeVariables ? {
+      // Modern professional color palette
+      primaryColor: '#f8fafc',
+      primaryTextColor: '#1e293b',
+      primaryBorderColor: '#3b82f6',
+      
+      secondaryColor: '#e0f2fe', 
+      secondaryTextColor: '#0f172a',
+      secondaryBorderColor: '#0ea5e9',
+      
+      tertiaryColor: '#fef3c7',
+      tertiaryTextColor: '#92400e',
+      tertiaryBorderColor: '#f59e0b',
+      
+      // Clean background and improved contrast
+      background: '#ffffff',
+      lineColor: '#64748b',
+      
+      // Enhanced node styling
+      mainBkg: '#ffffff',
+      secondBkg: '#f1f5f9', 
+      tertiaryBkg: '#e2e8f0',
+      
+      // Modern typography
+      fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontSize: '14px',
+      
+      // Improved diagram elements
+      nodeTextColor: '#1e293b',
+      nodeBorder: '#3b82f6',
+      clusterBkg: '#f8fafc',
+      clusterBorder: '#e2e8f0',
+      
+      // Sequence diagram enhancements
+      actorBkg: '#ffffff',
+      actorBorder: '#3b82f6', 
+      actorTextColor: '#1e293b',
+      activationBkg: '#dbeafe',
+      activationBorderColor: '#3b82f6',
+      
+      // State diagram improvements
+      labelBoxBkgColor: '#f8fafc',
+      labelBoxBorderColor: '#e2e8f0',
+      labelTextColor: '#1e293b',
+      
+      // Enhanced git diagram colors  
+      git0: '#3b82f6',
+      git1: '#10b981',
+      git2: '#f59e0b', 
+      git3: '#ef4444',
+      git4: '#8b5cf6',
+      git5: '#06b6d4',
+      git6: '#84cc16',
+      git7: '#f97316'
+    } : this.config.themeVariables;
+
+    // Build mermaid configuration
+    const mermaidConfig: any = {
+      theme,
+      startOnLoad: true,
+      securityLevel: 'loose'
+    };
+    
+    // Add theme variables if provided
+    if (defaultModernThemeVariables) {
+      mermaidConfig.themeVariables = defaultModernThemeVariables;
+    }
+
     return `
       <!DOCTYPE html>
       <html>
@@ -186,6 +258,7 @@ export class MermaidProcessor {
             padding: 40px;
             background: ${this.config.backgroundColor || 'white'};
             width: 100%;
+            font-family: ${defaultModernThemeVariables?.fontFamily || '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'};
           }
           #mermaid-diagram {
             display: flex;
@@ -210,11 +283,7 @@ export class MermaidProcessor {
           </div>
         </div>
         <script>
-          mermaid.initialize({
-            theme: '${this.config.theme || 'default'}',
-            startOnLoad: true,
-            securityLevel: 'loose'
-          });
+          mermaid.initialize(${JSON.stringify(mermaidConfig)});
         </script>
       </body>
       </html>
