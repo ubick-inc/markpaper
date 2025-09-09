@@ -20,7 +20,26 @@ export interface PageBreakConfig {
   avoidInside?: string[];
 }
 
+export interface MermaidLayoutConfig {
+  /** Prevent overlapping elements */
+  preventOverlaps?: boolean;
+  /** Minimum spacing between nodes */
+  nodeSpacing?: number;
+  /** Spacing between different levels/ranks */
+  rankSpacing?: number;
+  /** Curve style for connections */
+  curveStyle?: 'basis' | 'cardinal' | 'catmullRom' | 'linear' | 'monotoneX' | 'monotoneY' | 'natural' | 'step' | 'stepAfter' | 'stepBefore';
+  /** Padding around the diagram */
+  padding?: number;
+  /** Use ELK renderer for better layout */
+  useElkRenderer?: boolean;
+  /** Merge parallel edges to reduce clutter */
+  mergeEdges?: boolean;
+}
+
 export interface MermaidConfig {
+  /** Whether to enable Mermaid processing */
+  enabled?: boolean;
   /** Mermaid theme */
   theme?: 'default' | 'dark' | 'forest' | 'neutral';
   /** Diagram width in pixels */
@@ -29,6 +48,8 @@ export interface MermaidConfig {
   backgroundColor?: string;
   /** Scale factor */
   scale?: number;
+  /** Layout configuration for overlap prevention */
+  layout?: MermaidLayoutConfig;
 }
 
 export interface PageConfig {
