@@ -3,32 +3,6 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { mkdirSync, rmSync } from 'fs';
 
-// Polyfill for Node.js 18 compatibility with undici/fetch
-if (typeof global.ReadableStream === 'undefined') {
-  // Simple ReadableStream polyfill for Node.js 18
-  global.ReadableStream = class ReadableStream {
-    constructor(public source?: any) {}
-    getReader() { return { read: () => Promise.resolve({ done: true, value: undefined }) }; }
-    cancel() { return Promise.resolve(); }
-    locked = false;
-  } as any;
-}
-
-if (typeof global.File === 'undefined') {
-  // Simple File polyfill for Node.js 18
-  global.File = class File {
-    constructor(public chunks: any[], public name: string, public options?: any) {}
-    get type() { return this.options?.type || ''; }
-    get size() { return this.chunks.reduce((acc, chunk) => acc + chunk.length, 0); }
-    get lastModified() { return this.options?.lastModified || Date.now(); }
-    get webkitRelativePath() { return ''; }
-    arrayBuffer() { return Promise.resolve(new ArrayBuffer(0)); }
-    text() { return Promise.resolve(''); }
-    stream() { return new global.ReadableStream(); }
-    slice() { return new File([], this.name, this.options); }
-  } as any;
-}
-
 // Create test temp directory
 const testTempDir = join(tmpdir(), 'markpaper-test');
 

@@ -21,7 +21,7 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1'
   },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
-  testTimeout: process.env.CI === 'true' ? 60000 : 30000, // Longer timeout in CI
+  testTimeout: 30000,
   globals: {
     'ts-jest': {
       tsconfig: {
