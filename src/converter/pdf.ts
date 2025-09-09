@@ -44,11 +44,17 @@ export class PDFGenerator {
         join(tempDir, 'diagrams')
       );
 
+      // Combine diagram data with captions
+      const diagramsWithCaptions = processedDiagrams.map((processed, index) => ({
+        ...processed,
+        caption: mermaidDiagrams[index]?.caption
+      }));
+
       // Convert markdown to HTML
       let html = await this.markdownConverter.convert(markdown);
 
       // Replace mermaid blocks with images
-      html = this.markdownConverter.replaceMermaidBlocks(html, processedDiagrams);
+      html = this.markdownConverter.replaceMermaidBlocks(html, diagramsWithCaptions);
 
       // Create complete HTML document
       const fullHtml = await this.createFullHTML(html, tempDir);

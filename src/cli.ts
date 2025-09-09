@@ -39,6 +39,9 @@ program
   .option('--mermaid-theme <theme>', 'Mermaid theme (default, dark, forest, neutral)', 'default')
   .option('--mermaid-width <width>', 'Mermaid diagram width in pixels', parseInt)
   .option('--mermaid-background <color>', 'Mermaid background color')
+  .option('--mermaid-captions', 'Enable automatic captions for Mermaid diagrams')
+  .option('--mermaid-caption-prefix <prefix>', 'Caption prefix (e.g., "図", "Figure")', '図')
+  .option('--mermaid-caption-format <format>', 'Caption format template', '{prefix} {number}: {title}')
   .option('--no-mermaid', 'Skip Mermaid diagram processing')
   .option('--css <path>', 'Custom CSS file path')
   .option('--theme <name>', 'Theme name')
@@ -110,7 +113,8 @@ program
           ...(config.mermaid || {}),
           enabled: false
         };
-      } else if (options.mermaidTheme || options.mermaidWidth || options.mermaidBackground) {
+      } else if (options.mermaidTheme || options.mermaidWidth || options.mermaidBackground || 
+                 options.mermaidCaptions || options.mermaidCaptionPrefix || options.mermaidCaptionFormat) {
         cliOptions.mermaid = {
           ...(config.mermaid || {}),
           enabled: true,
@@ -118,6 +122,21 @@ program
           ...(options.mermaidWidth && { width: options.mermaidWidth }),
           ...(options.mermaidBackground && { backgroundColor: options.mermaidBackground })
         };
+
+        // Handle caption options
+        if (options.mermaidCaptions || options.mermaidCaptionPrefix || options.mermaidCaptionFormat) {
+          if (!cliOptions.mermaid) {
+            cliOptions.mermaid = { ...(config.mermaid || {}), enabled: true };
+          }
+          cliOptions.mermaid.captions = {
+            ...(config.mermaid?.captions || {}),
+            enabled: options.mermaidCaptions || false,
+            autoNumber: options.mermaidCaptions || false,
+            extractTitle: options.mermaidCaptions || false,
+            ...(options.mermaidCaptionPrefix && { prefix: options.mermaidCaptionPrefix }),
+            ...(options.mermaidCaptionFormat && { format: options.mermaidCaptionFormat })
+          };
+        }
       }
 
       // Other options
