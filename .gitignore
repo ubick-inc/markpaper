@@ -49,6 +49,7 @@ coverage/
 # Output files
 *.pdf
 examples/*.pdf
+tests/output/
 
 # Temporary files
 tmp/

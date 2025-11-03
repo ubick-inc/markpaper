@@ -1,14 +1,9 @@
-# Document with Mermaid
+# Test Document with Mermaid
 
-## Flowchart
+This document contains a Mermaid diagram.
 
 ```mermaid
 graph TD
-    A[Start] --> B{Decision}
-    B -->|Yes| C[End]
-    B -->|No| D[Continue]
+    A[Start] --> B[Process]
+    B --> C[End]
 ```
-
-## Content
-
-Regular content after diagram.

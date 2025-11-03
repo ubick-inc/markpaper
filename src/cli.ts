@@ -33,6 +33,7 @@ program
   .option('--margin-right <margin>', 'Right margin (e.g., 2cm, 1in)')
   .option('--margin-bottom <margin>', 'Bottom margin (e.g., 2cm, 1in)')
   .option('--margin-left <margin>', 'Left margin (e.g., 2cm, 1in)')
+  .option('--page-numbers', 'Show page numbers at bottom center')
   .option('--page-break-h1', 'Insert page break before H1 headings')
   .option('--page-break-h2', 'Insert page break before H2 headings')
   .option('--page-break-h3', 'Insert page break before H3 headings')
@@ -70,12 +71,13 @@ program
       }
 
       // Page options
-      if (options.pageSize || options.pageOrientation || 
+      if (options.pageSize || options.pageOrientation || options.pageNumbers ||
           options.marginTop || options.marginRight || options.marginBottom || options.marginLeft) {
         cliOptions.page = {
           ...(config.page || {}),
           ...(options.pageSize && { size: options.pageSize }),
-          ...(options.pageOrientation && { orientation: options.pageOrientation })
+          ...(options.pageOrientation && { orientation: options.pageOrientation }),
+          ...(options.pageNumbers && { showPageNumbers: true })
         };
 
         if (options.marginTop || options.marginRight || options.marginBottom || options.marginLeft) {
