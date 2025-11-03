@@ -28,6 +28,16 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
 
+    - name: Cache Puppeteer binaries
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/puppeteer
+          ~/.cache/ms-playwright
+        key: ${{ runner.os }}-puppeteer-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-puppeteer-
+
     - name: Install dependencies
       run: npm ci
 
