@@ -95,6 +95,18 @@ export class PDFGenerator {
     // Apply configuration to CSS
     css = this.applyCSSVariables(css);
 
+    // Add page numbers CSS if enabled
+    if (this.config.page?.showPageNumbers) {
+      css += '\n\n/* Page Numbers */\n';
+      css += '@page {\n';
+      css += '  @bottom-center {\n';
+      css += '    content: counter(page);\n';
+      css += '    font-size: 10pt;\n';
+      css += '    color: #666;\n';
+      css += '  }\n';
+      css += '}\n';
+    }
+
     // Read custom CSS if specified
     if (this.config.css) {
       try {

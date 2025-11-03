@@ -43,6 +43,8 @@ export interface PageConfig {
     bottom?: string;
     left?: string;
   };
+  /** Show page numbers at bottom center */
+  showPageNumbers?: boolean;
 }
 
 export interface MarkPaperConfig {

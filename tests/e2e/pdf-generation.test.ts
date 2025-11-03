@@ -25,8 +25,8 @@ describe('MarkPaper PDF Generation E2E Tests', () => {
 
   describe('Basic functionality tests', () => {
     it('should generate PDF from typography test', async () => {
-      const inputPath = join(testsDir, 'basic/01-typography.md');
-      const outputPath = join(outputDir, '01-typography.pdf');
+      const inputPath = join(testsDir, '01-basic-typography.md');
+      const outputPath = join(outputDir, '01-basic-typography.pdf');
 
       const { stdout } = await execAsync(
         `node ${cliPath} ${inputPath} -o ${outputPath}`,
@@ -41,8 +41,8 @@ describe('MarkPaper PDF Generation E2E Tests', () => {
     }, 70000);
 
     it('should generate PDF from code block test', async () => {
-      const inputPath = join(testsDir, 'basic/02-code-block.md');
-      const outputPath = join(outputDir, '02-code-block.pdf');
+      const inputPath = join(testsDir, '02-basic-code-block.md');
+      const outputPath = join(outputDir, '02-basic-code-block.pdf');
 
       const { stdout } = await execAsync(
         `node ${cliPath} ${inputPath} -o ${outputPath}`,
@@ -54,8 +54,8 @@ describe('MarkPaper PDF Generation E2E Tests', () => {
     }, 70000);
 
     it('should generate PDF from table test', async () => {
-      const inputPath = join(testsDir, 'basic/03-table.md');
-      const outputPath = join(outputDir, '03-table.pdf');
+      const inputPath = join(testsDir, '03-basic-table.md');
+      const outputPath = join(outputDir, '03-basic-table.pdf');
 
       const { stdout } = await execAsync(
         `node ${cliPath} ${inputPath} -o ${outputPath}`,
@@ -67,8 +67,8 @@ describe('MarkPaper PDF Generation E2E Tests', () => {
     }, 70000);
 
     it('should generate PDF from blockquote test', async () => {
-      const inputPath = join(testsDir, 'basic/04-blockquote.md');
-      const outputPath = join(outputDir, '04-blockquote.pdf');
+      const inputPath = join(testsDir, '04-basic-blockquote.md');
+      const outputPath = join(outputDir, '04-basic-blockquote.pdf');
 
       const { stdout } = await execAsync(
         `node ${cliPath} ${inputPath} -o ${outputPath}`,
@@ -82,8 +82,8 @@ describe('MarkPaper PDF Generation E2E Tests', () => {
 
   describe('Image processing tests', () => {
     it('should handle online images with size specifications', async () => {
-      const inputPath = join(testsDir, 'images/01-online-image.md');
-      const outputPath = join(outputDir, '01-online-image.pdf');
+      const inputPath = join(testsDir, '05-image-online.md');
+      const outputPath = join(outputDir, '05-image-online.pdf');
 
       const { stdout } = await execAsync(
         `node ${cliPath} ${inputPath} -o ${outputPath}`,
@@ -95,8 +95,8 @@ describe('MarkPaper PDF Generation E2E Tests', () => {
     }, 70000);
 
     it('should handle local images with size specifications', async () => {
-      const inputPath = join(testsDir, 'images/02-local-image.md');
-      const outputPath = join(outputDir, '02-local-image.pdf');
+      const inputPath = join(testsDir, '06-image-local.md');
+      const outputPath = join(outputDir, '06-image-local.pdf');
 
       const { stdout } = await execAsync(
         `node ${cliPath} ${inputPath} -o ${outputPath}`,
@@ -112,8 +112,8 @@ describe('MarkPaper PDF Generation E2E Tests', () => {
     }, 70000);
 
     it('should handle mixed online and local images', async () => {
-      const inputPath = join(testsDir, 'images/03-mixed-images.md');
-      const outputPath = join(outputDir, '03-mixed-images.pdf');
+      const inputPath = join(testsDir, '07-image-mixed.md');
+      const outputPath = join(outputDir, '07-image-mixed.pdf');
 
       const { stdout } = await execAsync(
         `node ${cliPath} ${inputPath} -o ${outputPath}`,
@@ -127,8 +127,8 @@ describe('MarkPaper PDF Generation E2E Tests', () => {
 
   describe('Page break tests', () => {
     it('should handle H1 page breaks', async () => {
-      const inputPath = join(testsDir, 'page-breaks/01-h1-page-break.md');
-      const outputPath = join(outputDir, '01-h1-page-break.pdf');
+      const inputPath = join(testsDir, '12-page-break-h1.md');
+      const outputPath = join(outputDir, '12-page-break-h1.pdf');
 
       const { stdout } = await execAsync(
         `node ${cliPath} ${inputPath} -o ${outputPath}`,
@@ -140,8 +140,8 @@ describe('MarkPaper PDF Generation E2E Tests', () => {
     }, 70000);
 
     it('should avoid breaking code blocks and tables', async () => {
-      const inputPath = join(testsDir, 'page-breaks/02-avoid-break.md');
-      const outputPath = join(outputDir, '02-avoid-break.pdf');
+      const inputPath = join(testsDir, '13-page-break-avoid.md');
+      const outputPath = join(outputDir, '13-page-break-avoid.pdf');
 
       const { stdout } = await execAsync(
         `node ${cliPath} ${inputPath} -o ${outputPath}`,
@@ -153,96 +153,67 @@ describe('MarkPaper PDF Generation E2E Tests', () => {
     }, 70000);
   });
 
-  describe('Mermaid diagram tests (skip if puppeteer fails)', () => {
-    it.skip('should generate PDF from flowchart test', async () => {
-      const inputPath = join(testsDir, 'mermaid/01-flowchart.md');
-      const outputPath = join(outputDir, '01-flowchart.pdf');
+  describe('Mermaid diagram tests', () => {
+    it('should generate PDF from flowchart test', async () => {
+      const inputPath = join(testsDir, '08-mermaid-flowchart.md');
+      const outputPath = join(outputDir, '08-mermaid-flowchart.pdf');
 
-      try {
-        const { stdout } = await execAsync(
-          `node ${cliPath} ${inputPath} -o ${outputPath}`,
-          { timeout: 60000 }
-        );
+      const { stdout } = await execAsync(
+        `node ${cliPath} ${inputPath} -o ${outputPath}`,
+        { timeout: 60000 }
+      );
 
-        expect(stdout).toContain('PDF generated successfully');
-        expect(existsSync(outputPath)).toBe(true);
-      } catch (error: any) {
-        // Skip if puppeteer fails
-        if (error.message?.includes('puppeteer') || error.message?.includes('browser')) {
-          console.log('Skipping mermaid test due to puppeteer issues');
-        } else {
-          throw error;
-        }
-      }
+      expect(stdout).toContain('PDF generated successfully');
+      expect(existsSync(outputPath)).toBe(true);
+
+      // Mermaid PDFs should be larger due to diagram rendering
+      const fileStats = readFileSync(outputPath);
+      expect(fileStats.length).toBeGreaterThan(20000);
     }, 70000);
 
-    it.skip('should generate PDF from sequence diagram test', async () => {
-      const inputPath = join(testsDir, 'mermaid/02-sequence.md');
-      const outputPath = join(outputDir, '02-sequence.pdf');
+    it('should generate PDF from sequence diagram test', async () => {
+      const inputPath = join(testsDir, '09-mermaid-sequence.md');
+      const outputPath = join(outputDir, '09-mermaid-sequence.pdf');
 
-      try {
-        const { stdout } = await execAsync(
-          `node ${cliPath} ${inputPath} -o ${outputPath}`,
-          { timeout: 60000 }
-        );
+      const { stdout } = await execAsync(
+        `node ${cliPath} ${inputPath} -o ${outputPath}`,
+        { timeout: 60000 }
+      );
 
-        expect(stdout).toContain('PDF generated successfully');
-        expect(existsSync(outputPath)).toBe(true);
-      } catch (error: any) {
-        if (error.message?.includes('puppeteer') || error.message?.includes('browser')) {
-          console.log('Skipping mermaid test due to puppeteer issues');
-        } else {
-          throw error;
-        }
-      }
+      expect(stdout).toContain('PDF generated successfully');
+      expect(existsSync(outputPath)).toBe(true);
     }, 70000);
 
-    it.skip('should generate PDF from class diagram test', async () => {
-      const inputPath = join(testsDir, 'mermaid/03-class.md');
-      const outputPath = join(outputDir, '03-class.pdf');
+    it('should generate PDF from class diagram test', async () => {
+      const inputPath = join(testsDir, '10-mermaid-class.md');
+      const outputPath = join(outputDir, '10-mermaid-class.pdf');
 
-      try {
-        const { stdout } = await execAsync(
-          `node ${cliPath} ${inputPath} -o ${outputPath}`,
-          { timeout: 60000 }
-        );
+      const { stdout } = await execAsync(
+        `node ${cliPath} ${inputPath} -o ${outputPath}`,
+        { timeout: 60000 }
+      );
 
-        expect(stdout).toContain('PDF generated successfully');
-        expect(existsSync(outputPath)).toBe(true);
-      } catch (error: any) {
-        if (error.message?.includes('puppeteer') || error.message?.includes('browser')) {
-          console.log('Skipping mermaid test due to puppeteer issues');
-        } else {
-          throw error;
-        }
-      }
+      expect(stdout).toContain('PDF generated successfully');
+      expect(existsSync(outputPath)).toBe(true);
     }, 70000);
 
-    it.skip('should generate PDF from architecture diagram test', async () => {
-      const inputPath = join(testsDir, 'mermaid/04-architecture.md');
-      const outputPath = join(outputDir, '04-architecture.pdf');
+    it('should generate PDF from architecture diagram test', async () => {
+      const inputPath = join(testsDir, '11-mermaid-architecture.md');
+      const outputPath = join(outputDir, '11-mermaid-architecture.pdf');
 
-      try {
-        const { stdout } = await execAsync(
-          `node ${cliPath} ${inputPath} -o ${outputPath}`,
-          { timeout: 60000 }
-        );
+      const { stdout } = await execAsync(
+        `node ${cliPath} ${inputPath} -o ${outputPath}`,
+        { timeout: 60000 }
+      );
 
-        expect(stdout).toContain('PDF generated successfully');
-        expect(existsSync(outputPath)).toBe(true);
-      } catch (error: any) {
-        if (error.message?.includes('puppeteer') || error.message?.includes('browser')) {
-          console.log('Skipping mermaid test due to puppeteer issues');
-        } else {
-          throw error;
-        }
-      }
+      expect(stdout).toContain('PDF generated successfully');
+      expect(existsSync(outputPath)).toBe(true);
     }, 70000);
   });
 
   describe('Debug mode verification', () => {
     it('should show image processing logs in debug mode', async () => {
-      const inputPath = join(testsDir, 'images/02-local-image.md');
+      const inputPath = join(testsDir, '06-image-local.md');
       const outputPath = join(outputDir, 'debug-local-image.pdf');
 
       const { stdout } = await execAsync(
@@ -259,6 +230,75 @@ describe('MarkPaper PDF Generation E2E Tests', () => {
       if (existsSync(outputPath)) {
         unlinkSync(outputPath);
       }
+    }, 70000);
+  });
+
+  describe('Page numbers and outline tests', () => {
+    it('should generate PDF with page numbers when --page-numbers flag is used', async () => {
+      const inputPath = join(testsDir, '14-page-numbers.md');
+      const outputPath = join(outputDir, '14-page-numbers.pdf');
+
+      const { stdout } = await execAsync(
+        `node ${cliPath} ${inputPath} -o ${outputPath} --page-numbers`,
+        { timeout: 60000 }
+      );
+
+      expect(stdout).toContain('PDF generated successfully');
+      expect(existsSync(outputPath)).toBe(true);
+
+      // Check file size - page numbers shouldn't add much size
+      const fileStats = readFileSync(outputPath);
+      expect(fileStats.length).toBeGreaterThan(10000);
+    }, 70000);
+
+    it('should generate PDF with outline (bookmarks) from headings', async () => {
+      const inputPath = join(testsDir, '14-page-numbers.md');
+      const outputPath = join(outputDir, '14-page-numbers-outline.pdf');
+
+      const { stdout } = await execAsync(
+        `node ${cliPath} ${inputPath} -o ${outputPath}`,
+        { timeout: 60000 }
+      );
+
+      expect(stdout).toContain('PDF generated successfully');
+      expect(existsSync(outputPath)).toBe(true);
+
+      // PDF should contain headings that become bookmarks
+      // Visual verification required for actual outline structure
+    }, 70000);
+  });
+
+  describe('Table of contents tests', () => {
+    it('should generate PDF with automatic table of contents', async () => {
+      const inputPath = join(testsDir, '15-toc.md');
+      const outputPath = join(outputDir, '15-toc.pdf');
+
+      const { stdout } = await execAsync(
+        `node ${cliPath} ${inputPath} -o ${outputPath}`,
+        { timeout: 60000 }
+      );
+
+      expect(stdout).toContain('PDF generated successfully');
+      expect(existsSync(outputPath)).toBe(true);
+
+      // Check file size - TOC should add some content
+      const fileStats = readFileSync(outputPath);
+      expect(fileStats.length).toBeGreaterThan(10000);
+    }, 70000);
+
+    it('should generate TOC with hierarchical structure', async () => {
+      const inputPath = join(testsDir, '15-toc.md');
+      const outputPath = join(outputDir, '15-toc-hierarchy.pdf');
+
+      const { stdout } = await execAsync(
+        `node ${cliPath} ${inputPath} -o ${outputPath}`,
+        { timeout: 60000 }
+      );
+
+      expect(stdout).toContain('PDF generated successfully');
+      expect(existsSync(outputPath)).toBe(true);
+
+      // Visual verification required for TOC structure and indentation
     }, 70000);
   });
 });

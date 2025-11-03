@@ -6,11 +6,24 @@
 
 ```
 tests/
-├── basic/           # 基本機能のテスト（タイポグラフィ、コード、テーブル、引用）
-├── images/          # 画像処理のテスト（オンライン、ローカル、混在）
-│   └── assets/      # テスト用画像ファイル
-├── mermaid/         # Mermaid図のテスト（フローチャート、シーケンス、クラス図など）
-└── page-breaks/     # 改ページ制御のテスト
+├── 01-basic-typography.md        # 基本タイポグラフィ
+├── 02-basic-code-block.md        # コードブロック
+├── 03-basic-table.md             # テーブル
+├── 04-basic-blockquote.md        # 引用
+├── 05-image-online.md            # オンライン画像
+├── 06-image-local.md             # ローカル画像
+├── 07-image-mixed.md             # 混在画像
+├── 08-mermaid-flowchart.md       # Mermaidフローチャート
+├── 09-mermaid-sequence.md        # Mermaidシーケンス図
+├── 10-mermaid-class.md           # Mermaidクラス図
+├── 11-mermaid-architecture.md    # Mermaidアーキテクチャ図
+├── 12-page-break-h1.md           # H1改ページ
+├── 13-page-break-avoid.md        # 改ページ回避
+├── 14-page-numbers.md            # ページ番号とアウトライン
+├── assets/                       # テスト用画像ファイル
+├── e2e/                          # E2Eテスト
+├── output/                       # PDF出力先（gitignore）
+└── unit/                         # ユニットテスト
 ```
 
 ## テストの原則
@@ -22,6 +35,7 @@ tests/
 ### テストケースの分離
 - 各機能ごとに独立したMarkdownファイルを作成
 - 機能の組み合わせテストも個別ファイルで管理
+- ファイル名に番号を振ってテスト順序を明確化
 
 ## テスト実行方法
 
@@ -29,65 +43,65 @@ tests/
 
 ```bash
 # 基本機能テスト
-markpaper tests/basic/01-typography.md -o output/typography.pdf
-markpaper tests/basic/02-code-block.md -o output/code-block.pdf
-markpaper tests/basic/03-table.md -o output/table.pdf
-markpaper tests/basic/04-blockquote.md -o output/blockquote.pdf
+markpaper tests/01-basic-typography.md -o output/01-basic-typography.pdf
+markpaper tests/02-basic-code-block.md -o output/02-basic-code-block.pdf
+markpaper tests/03-basic-table.md -o output/03-basic-table.pdf
+markpaper tests/04-basic-blockquote.md -o output/04-basic-blockquote.pdf
 
 # 画像テスト
-markpaper tests/images/01-online-image.md -o output/online-image.pdf
-markpaper tests/images/02-local-image.md -o output/local-image.pdf
-markpaper tests/images/03-mixed-images.md -o output/mixed-images.pdf
+markpaper tests/05-image-online.md -o output/05-image-online.pdf
+markpaper tests/06-image-local.md -o output/06-image-local.pdf
+markpaper tests/07-image-mixed.md -o output/07-image-mixed.pdf
 
 # Mermaidテスト
-markpaper tests/mermaid/01-flowchart.md -o output/flowchart.pdf
-markpaper tests/mermaid/02-sequence.md -o output/sequence.pdf
-markpaper tests/mermaid/03-class.md -o output/class.pdf
-markpaper tests/mermaid/04-architecture.md -o output/architecture.pdf
+markpaper tests/08-mermaid-flowchart.md -o output/08-mermaid-flowchart.pdf
+markpaper tests/09-mermaid-sequence.md -o output/09-mermaid-sequence.pdf
+markpaper tests/10-mermaid-class.md -o output/10-mermaid-class.pdf
+markpaper tests/11-mermaid-architecture.md -o output/11-mermaid-architecture.pdf
 
 # 改ページテスト
-markpaper tests/page-breaks/01-h1-page-break.md -o output/h1-page-break.pdf
-markpaper tests/page-breaks/02-avoid-break.md -o output/avoid-break.pdf
+markpaper tests/12-page-break-h1.md -o output/12-page-break-h1.pdf
+markpaper tests/13-page-break-avoid.md -o output/13-page-break-avoid.pdf
+
+# ページ番号とアウトライン
+markpaper tests/14-page-numbers.md -o output/14-page-numbers.pdf --page-numbers
 ```
 
 ### 一括テスト（例）
 
 ```bash
-# すべての基本機能テストを実行
-for file in tests/basic/*.md; do
-  output="output/$(basename "$file" .md).pdf"
-  markpaper "$file" -o "$output" --debug
-done
-
-# すべてのMermaidテストを実行
-for file in tests/mermaid/*.md; do
-  output="output/$(basename "$file" .md).pdf"
-  markpaper "$file" -o "$output" --debug
+# すべてのテストを実行
+for file in tests/*.md; do
+  filename=$(basename "$file" .md)
+  markpaper "$file" -o "output/${filename}.pdf" --debug
 done
 ```
 
 ## テストカテゴリ
 
-### 基本機能 (basic/)
-- **01-typography.md**: 見出し、本文、リストなどのタイポグラフィ
-- **02-code-block.md**: コードブロックの表示とシンタックス
-- **03-table.md**: テーブルの表示とレイアウト
-- **04-blockquote.md**: 引用文とコードの組み合わせ
+### 基本機能 (01-04)
+- **01-basic-typography.md**: 見出し、本文、リストなどのタイポグラフィ
+- **02-basic-code-block.md**: コードブロックの表示とシンタックス
+- **03-basic-table.md**: テーブルの表示とレイアウト
+- **04-basic-blockquote.md**: 引用文とコードの組み合わせ
 
-### 画像 (images/)
-- **01-online-image.md**: オンライン画像（サイズ指定あり/なし）
-- **02-local-image.md**: ローカル画像（相対パス、サイズ指定）
-- **03-mixed-images.md**: オンラインとローカルの混在
+### 画像 (05-07)
+- **05-image-online.md**: オンライン画像（サイズ指定あり/なし）
+- **06-image-local.md**: ローカル画像（相対パス、サイズ指定）
+- **07-image-mixed.md**: オンラインとローカルの混在
 
-### Mermaid図 (mermaid/)
-- **01-flowchart.md**: フローチャート（スタイル付き）
-- **02-sequence.md**: シーケンス図
-- **03-class.md**: クラス図
-- **04-architecture.md**: アーキテクチャ図（Beta機能）
+### Mermaid図 (08-11)
+- **08-mermaid-flowchart.md**: フローチャート（スタイル付き）
+- **09-mermaid-sequence.md**: シーケンス図
+- **10-mermaid-class.md**: クラス図
+- **11-mermaid-architecture.md**: アーキテクチャ図（Beta機能）
 
-### 改ページ (page-breaks/)
-- **01-h1-page-break.md**: H1見出しでの改ページ（複数ページ）
-- **02-avoid-break.md**: コードブロックとテーブルの改ページ回避
+### 改ページ (12-13)
+- **12-page-break-h1.md**: H1見出しでの改ページ（複数ページ）
+- **13-page-break-avoid.md**: コードブロックとテーブルの改ページ回避
+
+### ページ番号とアウトライン (14)
+- **14-page-numbers.md**: ページ番号表示とPDFアウトライン（しおり/ブックマーク）のテスト
 
 ## Jest テストの実行
 

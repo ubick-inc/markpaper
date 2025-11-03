@@ -1,15 +1,15 @@
-# Test Document
+# Simple Test Document
 
-This is a simple test document.
+This is a simple markdown document for CLI testing.
 
-## Section
+## Section 1
 
-Some content here.
+Some basic content here.
 
-```javascript
-console.log("test");
-```
+- List item 1
+- List item 2
+- List item 3
 
-| Column 1 | Column 2 |
-|----------|----------|
-| A        | B        |
+## Section 2
+
+More content to test basic PDF generation.

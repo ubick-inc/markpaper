@@ -6,6 +6,7 @@ import { fetchImageAsBase64, parseImageSize, generateImageStyle } from '../utils
 export class MarkdownConverter {
   private config: MarkPaperConfig;
   private logger: Logger;
+  private headings: Array<{ level: number; text: string; id: string }> = [];
 
   constructor(config: MarkPaperConfig, logger: Logger) {
     this.config = config;
@@ -19,11 +20,14 @@ export class MarkdownConverter {
   private setupMarked(): void {
     const renderer = new marked.Renderer();
 
-    // Add page break classes to headings
+    // Add page break classes to headings and collect for TOC
     renderer.heading = (text: string, level: number, raw: string) => {
       const escapedText = raw.toLowerCase().replace(/[^\w]+/g, '-');
       let pageBreakClass = '';
-      
+
+      // 目次用に見出し情報を保存
+      this.headings.push({ level, text, id: escapedText });
+
       if (level === 1 && this.config.pageBreak?.beforeH1) {
         pageBreakClass = ' class="page-break-before"';
       } else if (level === 2 && this.config.pageBreak?.beforeH2) {
@@ -78,9 +82,24 @@ export class MarkdownConverter {
    */
   async convert(markdown: string): Promise<string> {
     this.logger.debugLog('Converting markdown to HTML');
-    
+
     try {
-      const html = marked(markdown);
+      // Reset headings for each conversion
+      this.headings = [];
+
+      let html = marked(markdown);
+
+      // Generate and insert table of contents if there are multiple sections
+      if (this.headings.length > 0) {
+        const toc = this.generateTableOfContents();
+        if (toc.trim()) {
+          html = this.insertTOCAfterFirstH1(html, toc);
+        }
+      }
+
+      // Clean up empty elements
+      html = this.cleanupEmptyElements(html);
+
       this.logger.debugLog('Markdown conversion completed');
       return html;
     } catch (error) {
@@ -110,19 +129,23 @@ export class MarkdownConverter {
   }
 
   /**
-   * Replace mermaid blocks with placeholder divs
+   * Replace mermaid blocks with rendered images
    */
-  replaceMermaidBlocks(html: string, diagrams: Array<{ id: string; imageUrl: string }>): string {
+  replaceMermaidBlocks(html: string, diagrams: Array<{ id: string; imageUrl: string; content: string }>): string {
     let result = html;
 
-    diagrams.forEach(({ id, imageUrl }) => {
-      const placeholder = `<div class="mermaid-container avoid-page-break">
-          <div class="mermaid">[Mermaid diagram ${id}]</div>
-        </div>`;
+    diagrams.forEach(({ id, imageUrl, content }) => {
+      // Match the actual mermaid code block in HTML
+      // The mermaid code renderer outputs: <div class="mermaid-container..."><div class="mermaid">{code}</div></div>
+      const escapedContent = content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pattern = new RegExp(
+        `<div class="mermaid-container avoid-page-break">\\s*<div class="mermaid">${escapedContent}</div>\\s*</div>`,
+        'g'
+      );
       const replacement = `<div class="mermaid-container avoid-page-break">
           <img src="${imageUrl}" alt="Mermaid diagram ${id}" class="mermaid-image" />
         </div>`;
-      result = result.replace(placeholder, replacement);
+      result = result.replace(pattern, replacement);
     });
 
     return result;
@@ -223,5 +246,70 @@ export class MarkdownConverter {
     }
 
     return result;
+  }
+
+  /**
+   * Generate table of contents from collected headings
+   */
+  private generateTableOfContents(): string {
+    // H1以外の見出しを階層構造で生成
+    const filteredHeadings = this.headings.filter(h => h.level > 1 && h.text.trim());
+
+    if (filteredHeadings.length === 0) {
+      return '';
+    }
+
+    // Generate clean TOC items with proper escaping
+    const tocItems = filteredHeadings.map(heading => {
+      const levelClass = `toc-level-${heading.level}`;
+      const cleanText = heading.text.replace(/[<>"'&]/g, (match) => {
+        const entities: Record<string, string> = {
+          '<': '&lt;', '>': '&gt;', '"': '&quot;',
+          "'": '&#39;', '&': '&amp;'
+        };
+        return entities[match] || match;
+      });
+      const cleanId = heading.id.replace(/[^a-zA-Z0-9_-]/g, '');
+      return `<li class="${levelClass}"><a href="#${cleanId}">${cleanText}</a></li>`;
+    }).join('\n    ');
+
+    return `<div class="table-of-contents">
+  <h2>目次</h2>
+  <ul class="toc-list">
+    ${tocItems}
+  </ul>
+</div>`;
+  }
+
+  /**
+   * Insert TOC after the first H1 heading
+   */
+  private insertTOCAfterFirstH1(html: string, toc: string): string {
+    // Find the first H1 heading
+    const h1Match = html.match(/<h1[^>]*>.*?<\/h1>/);
+
+    if (!h1Match) {
+      // No H1 found, prepend TOC to the beginning
+      return toc + '\n' + html;
+    }
+
+    const h1EndIndex = html.indexOf(h1Match[0]) + h1Match[0].length;
+    return html.slice(0, h1EndIndex) + '\n' + toc + '\n' + html.slice(h1EndIndex);
+  }
+
+  /**
+   * Clean up empty HTML elements
+   */
+  private cleanupEmptyElements(html: string): string {
+    // Remove empty paragraphs
+    html = html.replace(/<p>\s*<\/p>/g, '');
+
+    // Remove empty divs
+    html = html.replace(/<div[^>]*>\s*<\/div>/g, '');
+
+    // Remove multiple consecutive newlines
+    html = html.replace(/\n{3,}/g, '\n\n');
+
+    return html.trim();
   }
 }

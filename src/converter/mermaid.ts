@@ -1,6 +1,7 @@
 import puppeteer, { Browser, Page } from 'puppeteer';
-import { writeFile, mkdir } from 'fs-extra';
+import { writeFile, mkdir, pathExists } from 'fs-extra';
 import { join, dirname } from 'path';
+import { homedir } from 'os';
 import { MermaidConfig } from '../config/types';
 import { Logger } from '../utils/logger';
 
@@ -15,30 +16,68 @@ export class MermaidProcessor {
   }
 
   /**
+   * Find Chrome executable path
+   */
+  private async findChromeExecutable(): Promise<string | undefined> {
+    const home = homedir();
+    const possiblePaths = [
+      // Puppeteer cache for macOS ARM
+      join(home, '.cache/puppeteer/chrome/mac_arm-131.0.6778.204/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'),
+      // System Chrome (macOS)
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      // Chromium (macOS)
+      '/Applications/Chromium.app/Contents/MacOS/Chromium'
+    ];
+
+    for (const path of possiblePaths) {
+      if (await pathExists(path)) {
+        this.logger.debugLog(`Found Chrome at: ${path}`);
+        return path;
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
    * Initialize puppeteer browser
    */
   private async initBrowser(): Promise<void> {
     if (!this.browser) {
       this.logger.debugLog('Launching puppeteer browser for Mermaid rendering');
+
+      const executablePath = await this.findChromeExecutable();
+      const launchOptions: any = {
+        headless: 'new',
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu'
+        ]
+      };
+
+      if (executablePath) {
+        launchOptions.executablePath = executablePath;
+        this.logger.debugLog(`Using Chrome executable: ${executablePath}`);
+      }
+
       try {
-        this.browser = await puppeteer.launch({
+        this.browser = await puppeteer.launch(launchOptions);
+      } catch (error) {
+        this.logger.error(`Failed to launch Puppeteer: ${error}`);
+        // Try with minimal settings for macOS compatibility
+        const fallbackOptions: any = {
           headless: 'new',
           args: [
             '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--no-zygote',
-            '--single-process'
+            '--disable-setuid-sandbox'
           ]
-        });
-      } catch (error) {
-        this.logger.error(`Failed to launch Puppeteer: ${error}`);
-        // Try with simpler settings
-        this.browser = await puppeteer.launch({
-          headless: 'new',
-          args: ['--no-sandbox']
-        });
+        };
+        if (executablePath) {
+          fallbackOptions.executablePath = executablePath;
+        }
+        this.browser = await puppeteer.launch(fallbackOptions);
       }
     }
   }
@@ -55,35 +94,36 @@ export class MermaidProcessor {
   }
 
   /**
-   * Process mermaid diagrams and return image URLs
+   * Process mermaid diagrams and return image URLs with content
    */
   async processDiagrams(
     diagrams: Array<{ id: string; content: string }>,
     outputDir: string
-  ): Promise<Array<{ id: string; imageUrl: string }>> {
+  ): Promise<Array<{ id: string; imageUrl: string; content: string }>> {
     if (diagrams.length === 0) {
       return [];
     }
 
     await this.initBrowser();
-    const results: Array<{ id: string; imageUrl: string }> = [];
+    const results: Array<{ id: string; imageUrl: string; content: string }> = [];
 
     // Ensure output directory exists
     await mkdir(outputDir, { recursive: true });
 
     for (const diagram of diagrams) {
       this.logger.debugLog(`Rendering mermaid diagram: ${diagram.id}`);
-      
+
       try {
         const imageUrl = await this.renderDiagram(diagram, outputDir);
-        results.push({ id: diagram.id, imageUrl });
+        results.push({ id: diagram.id, imageUrl, content: diagram.content });
         this.logger.debugLog(`Successfully rendered: ${diagram.id}`);
       } catch (error) {
         this.logger.error(`Failed to render mermaid diagram ${diagram.id}: ${error}`);
         // Create placeholder
-        results.push({ 
-          id: diagram.id, 
-          imageUrl: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="100"><text x="50%" y="50%" text-anchor="middle" dy=".3em">Mermaid Render Error</text></svg>').toString('base64')
+        results.push({
+          id: diagram.id,
+          imageUrl: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="100"><text x="50%" y="50%" text-anchor="middle" dy=".3em">Mermaid Render Error</text></svg>').toString('base64'),
+          content: diagram.content
         });
       }
     }
