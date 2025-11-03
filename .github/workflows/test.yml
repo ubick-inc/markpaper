@@ -42,6 +42,14 @@ jobs:
       # E2E tests might be flaky on Windows, so we allow them to fail there
       continue-on-error: ${{ matrix.os == 'windows-latest' }}
 
+    - name: Upload PDF test outputs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-pdfs-${{ matrix.os }}-node${{ matrix.node-version }}
+        path: tests/output/*.pdf
+        retention-days: 7
+
     - name: Upload coverage reports
       if: matrix.os == 'macos-latest' && matrix.node-version == '22.x'
       uses: actions/upload-artifact@v4
