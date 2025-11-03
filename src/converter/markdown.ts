@@ -1,6 +1,7 @@
 import { marked } from 'marked';
 import { MarkPaperConfig } from '../config/types';
 import { Logger } from '../utils/logger';
+import { fetchImageAsBase64, parseImageSize, generateImageStyle } from '../utils/image';
 
 export class MarkdownConverter {
   private config: MarkPaperConfig;
@@ -113,7 +114,7 @@ export class MarkdownConverter {
    */
   replaceMermaidBlocks(html: string, diagrams: Array<{ id: string; imageUrl: string }>): string {
     let result = html;
-    
+
     diagrams.forEach(({ id, imageUrl }) => {
       const placeholder = `<div class="mermaid-container avoid-page-break">
           <div class="mermaid">[Mermaid diagram ${id}]</div>
@@ -123,6 +124,103 @@ export class MarkdownConverter {
         </div>`;
       result = result.replace(placeholder, replacement);
     });
+
+    return result;
+  }
+
+  /**
+   * Process images: convert to base64 and apply size specifications
+   */
+  async processImages(html: string, baseDir?: string): Promise<string> {
+    // Match all img tags with any attributes
+    const imgRegex = /<img\s+[^>]*?src="([^"]+)"[^>]*?>/gi;
+    const matches = Array.from(html.matchAll(imgRegex));
+
+    if (matches.length === 0) {
+      return html;
+    }
+
+    this.logger.debugLog(`Processing ${matches.length} images`);
+    let result = html;
+
+    // Process each image
+    for (const match of matches) {
+      const fullMatch = match[0];
+      let src = match[1];
+
+      try {
+        // Skip if already a data URI
+        if (src.startsWith('data:')) {
+          continue;
+        }
+
+        // Resolve relative paths based on baseDir (input markdown file directory)
+        if (baseDir && !src.startsWith('http://') && !src.startsWith('https://')) {
+          const path = require('path');
+          src = path.resolve(baseDir, src);
+          this.logger.debugLog(`Resolved relative path: ${match[1]} -> ${src}`);
+        }
+
+        // Extract all attributes from the img tag
+        const attributes: Record<string, string> = {};
+        const attrRegex = /(\w+)="([^"]*)"/g;
+        let attrMatch;
+
+        while ((attrMatch = attrRegex.exec(fullMatch)) !== null) {
+          const [, attrName, attrValue] = attrMatch;
+          if (attrName !== 'src') {  // Don't include src yet
+            attributes[attrName] = attrValue;
+          }
+        }
+
+        // Extract and parse alt text for size specification
+        const altText = attributes.alt || '';
+        const { alt: cleanAlt, size } = parseImageSize(altText);
+
+        // Fetch and convert image to base64
+        this.logger.debugLog(`Fetching image: ${src}`);
+        const base64Src = await fetchImageAsBase64(src);
+
+        // Build new img tag with proper spacing and attributes
+        let newImgTag = '<img';
+        newImgTag += ` src="${base64Src}"`;
+        newImgTag += ` alt="${cleanAlt}"`;
+
+        // Add other attributes except alt
+        for (const [key, value] of Object.entries(attributes)) {
+          if (key !== 'alt') {
+            newImgTag += ` ${key}="${value}"`;
+          }
+        }
+
+        // Add style for size if specified
+        if (size) {
+          const styles: string[] = [];
+          if (size.width) styles.push(`width: ${size.width}px`);
+          if (size.height) styles.push(`height: ${size.height}px`);
+
+          if (styles.length > 0) {
+            // Merge with existing style attribute if present
+            const existingStyle = attributes.style || '';
+            const combinedStyle = existingStyle
+              ? `${existingStyle}; ${styles.join('; ')}`
+              : styles.join('; ');
+            newImgTag = newImgTag.replace(/ style="[^"]*"/, '');  // Remove existing style
+            newImgTag += ` style="${combinedStyle}"`;
+          }
+        }
+
+        newImgTag += '>';
+
+        // Replace in result
+        result = result.replace(fullMatch, newImgTag);
+
+        this.logger.debugLog(`Successfully processed image: ${src}`);
+      } catch (error) {
+        this.logger.warn(`Failed to process image ${src}: ${error}`);
+        // Keep original img tag on error
+      }
+    }
 
     return result;
   }

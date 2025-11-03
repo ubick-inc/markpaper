@@ -50,6 +50,11 @@ export class PDFGenerator {
       // Replace mermaid blocks with images
       html = this.markdownConverter.replaceMermaidBlocks(html, processedDiagrams);
 
+      // Process images: fetch and convert to base64, apply size specifications
+      // Pass the directory of the input file to resolve relative paths
+      const inputDir = dirname(inputPath);
+      html = await this.markdownConverter.processImages(html, inputDir);
+
       // Create complete HTML document
       const fullHtml = await this.createFullHTML(html, tempDir);
 
