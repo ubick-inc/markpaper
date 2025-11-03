@@ -28,9 +28,11 @@ export class MarkdownConverter {
       // 目次用に見出し情報を保存
       this.headings.push({ level, text, id: escapedText });
 
-      if (level === 1 && this.config.pageBreak?.beforeH1) {
+      // H2見出しは常に改ページを強制
+      if (level === 1 && (this.config.pageBreak?.beforeH1 !== false)) {
         pageBreakClass = ' class="page-break-before"';
-      } else if (level === 2 && this.config.pageBreak?.beforeH2) {
+      } else if (level === 2) {
+        // H2は設定に関係なく常に改ページ
         pageBreakClass = ' class="page-break-before"';
       } else if (level === 3 && this.config.pageBreak?.beforeH3) {
         pageBreakClass = ' class="page-break-before"';
@@ -57,14 +59,13 @@ export class MarkdownConverter {
     };
 
     // Handle mermaid code blocks specially
-    const originalCodeRenderer = renderer.code;
     renderer.code = (code: string, language?: string) => {
       if (language === 'mermaid') {
         return `<div class="mermaid-container avoid-page-break">
           <div class="mermaid">${code}</div>
         </div>`;
       }
-      
+
       const validLanguage = language && /^[a-zA-Z0-9_+-]*$/.test(language);
       const langClass = validLanguage ? ` language-${language}` : '';
       return `<div class="code-block avoid-page-break"><pre><code class="hljs${langClass}">${code}</code></pre></div>`;
@@ -84,20 +85,23 @@ export class MarkdownConverter {
     this.logger.debugLog('Converting markdown to HTML');
 
     try {
-      // Reset headings for each conversion
+      // Reset headings for new conversion
       this.headings = [];
 
       let html = marked(markdown);
 
-      // Generate and insert table of contents if there are multiple sections
+      // Generate table of contents and insert after first H1
       if (this.headings.length > 0) {
         const toc = this.generateTableOfContents();
-        if (toc.trim()) {
+        if (toc.trim()) { // Only insert if TOC has content
           html = this.insertTOCAfterFirstH1(html, toc);
         }
       }
 
-      // Clean up empty elements
+      // Wrap sections to prevent page breaks within chapters
+      html = this.wrapSectionsForPageBreaks(html);
+
+      // Clean up empty elements that might cause visual artifacts
       html = this.cleanupEmptyElements(html);
 
       this.logger.debugLog('Markdown conversion completed');
@@ -106,6 +110,137 @@ export class MarkdownConverter {
       this.logger.error(`Failed to convert markdown: ${error}`);
       throw error;
     }
+  }
+
+  /**
+   * Wrap content between headings in section divs to control page breaks
+   */
+  private wrapSectionsForPageBreaks(html: string): string {
+    // Split content by headings while preserving the heading tags
+    const sections: string[] = [];
+    const headingRegex = /(<h[1-6][^>]*>.*?<\/h[1-6]>)/gi;
+    const parts = html.split(headingRegex);
+
+    let currentSection = '';
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const headingMatch = part.match(/<h([1-6])[^>]*>/i);
+
+      if (headingMatch) {
+        // Close previous section if exists and contains content
+        if (currentSection.trim()) {
+          sections.push(`<div class="section-content avoid-page-break">${currentSection.trim()}</div>`);
+        }
+
+        // Start new section with heading
+        currentSection = part;
+      } else if (part.trim()) {
+        // Only add non-empty content
+        currentSection += part;
+      }
+    }
+
+    // Close final section
+    if (currentSection.trim()) {
+      sections.push(`<div class="section-content avoid-page-break">${currentSection.trim()}</div>`);
+    }
+
+    return sections.filter(section => section.trim()).join('\n\n');
+  }
+
+  /**
+   * Insert TOC after first H1, with precise content placement
+   */
+  private insertTOCAfterFirstH1(html: string, toc: string): string {
+    // H1タグの直後に目次を挿入し、余分な要素を避ける
+    const h1Pattern = /(<h1[^>]*>.*?<\/h1>)\s*(<p>.*?<\/p>)?\s*(<h2[^>]*>)/is;
+    const h1Match = html.match(h1Pattern);
+
+    if (h1Match) {
+      const h1Tag = h1Match[1];
+      const firstParagraph = h1Match[2] || '';
+      const h2Tag = h1Match[3];
+
+      // H1の直後、最初のH2の前に目次を挿入（最初の段落は保持）
+      const afterToc = html.substring(html.indexOf(h2Tag));
+
+      if (firstParagraph) {
+        // H1 + 段落 + TOC + H2以降
+        return h1Tag + '\n\n' + firstParagraph + '\n\n' + toc + '\n\n' + afterToc;
+      } else {
+        // H1 + TOC + H2以降
+        return h1Tag + '\n\n' + toc + '\n\n' + afterToc;
+      }
+    }
+
+    // フォールバック: 単純なH1後挿入
+    const simpleH1Pattern = /(<h1[^>]*>.*?<\/h1>)/i;
+    const simpleMatch = html.match(simpleH1Pattern);
+    if (simpleMatch) {
+      const h1End = html.indexOf(simpleMatch[1]) + simpleMatch[1].length;
+      return html.slice(0, h1End) + '\n\n' + toc + '\n\n' + html.slice(h1End);
+    }
+
+    return toc + '\n\n' + html;
+  }
+
+  /**
+   * Generate table of contents HTML with proper hierarchical structure
+   */
+  private generateTableOfContents(): string {
+    // H1以外の見出しを階層構造で生成
+    const filteredHeadings = this.headings.filter(h => h.level > 1 && h.text.trim());
+
+    if (filteredHeadings.length === 0) {
+      return '';
+    }
+
+    // Generate clean TOC items with proper escaping
+    const tocItems = filteredHeadings.map(heading => {
+      const levelClass = `toc-level-${heading.level}`;
+      const cleanText = heading.text.replace(/[<>"'&]/g, (match) => {
+        const entities: Record<string, string> = {
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+          '&': '&amp;'
+        };
+        return entities[match] || match;
+      });
+      const cleanId = heading.id.replace(/[^a-zA-Z0-9_-]/g, '');
+      return `<li class="${levelClass}"><a href="#${cleanId}">${cleanText}</a></li>`;
+    }).join('\n    ');
+
+    return `<div class="table-of-contents">
+  <h2>目次</h2>
+  <ul class="toc-list">
+    ${tocItems}
+  </ul>
+</div>`;
+  }
+
+  /**
+   * Clean up empty HTML elements that might cause visual artifacts
+   */
+  private cleanupEmptyElements(html: string): string {
+    // Remove empty divs, paragraphs, and other containers
+    html = html.replace(/<div[^>]*>\s*<\/div>/gi, '');
+    html = html.replace(/<p[^>]*>\s*<\/p>/gi, '');
+    html = html.replace(/<blockquote[^>]*>\s*<\/blockquote>/gi, '');
+    html = html.replace(/<ul[^>]*>\s*<\/ul>/gi, '');
+    html = html.replace(/<ol[^>]*>\s*<\/ol>/gi, '');
+    html = html.replace(/<pre[^>]*>\s*<\/pre>/gi, '');
+    html = html.replace(/<code[^>]*>\s*<\/code>/gi, '');
+
+    // Remove multiple consecutive whitespace/newlines
+    html = html.replace(/\n\s*\n\s*\n/g, '\n\n');
+
+    // Remove empty table-of-contents divs specifically
+    html = html.replace(/<div class="table-of-contents"[^>]*>\s*<h2>目次<\/h2>\s*<ul class="toc-list">\s*<\/ul>\s*<\/div>/gi, '');
+
+    return html.trim();
   }
 
   /**
@@ -246,70 +381,5 @@ export class MarkdownConverter {
     }
 
     return result;
-  }
-
-  /**
-   * Generate table of contents from collected headings
-   */
-  private generateTableOfContents(): string {
-    // H1以外の見出しを階層構造で生成
-    const filteredHeadings = this.headings.filter(h => h.level > 1 && h.text.trim());
-
-    if (filteredHeadings.length === 0) {
-      return '';
-    }
-
-    // Generate clean TOC items with proper escaping
-    const tocItems = filteredHeadings.map(heading => {
-      const levelClass = `toc-level-${heading.level}`;
-      const cleanText = heading.text.replace(/[<>"'&]/g, (match) => {
-        const entities: Record<string, string> = {
-          '<': '&lt;', '>': '&gt;', '"': '&quot;',
-          "'": '&#39;', '&': '&amp;'
-        };
-        return entities[match] || match;
-      });
-      const cleanId = heading.id.replace(/[^a-zA-Z0-9_-]/g, '');
-      return `<li class="${levelClass}"><a href="#${cleanId}">${cleanText}</a></li>`;
-    }).join('\n    ');
-
-    return `<div class="table-of-contents">
-  <h2>目次</h2>
-  <ul class="toc-list">
-    ${tocItems}
-  </ul>
-</div>`;
-  }
-
-  /**
-   * Insert TOC after the first H1 heading
-   */
-  private insertTOCAfterFirstH1(html: string, toc: string): string {
-    // Find the first H1 heading
-    const h1Match = html.match(/<h1[^>]*>.*?<\/h1>/);
-
-    if (!h1Match) {
-      // No H1 found, prepend TOC to the beginning
-      return toc + '\n' + html;
-    }
-
-    const h1EndIndex = html.indexOf(h1Match[0]) + h1Match[0].length;
-    return html.slice(0, h1EndIndex) + '\n' + toc + '\n' + html.slice(h1EndIndex);
-  }
-
-  /**
-   * Clean up empty HTML elements
-   */
-  private cleanupEmptyElements(html: string): string {
-    // Remove empty paragraphs
-    html = html.replace(/<p>\s*<\/p>/g, '');
-
-    // Remove empty divs
-    html = html.replace(/<div[^>]*>\s*<\/div>/g, '');
-
-    // Remove multiple consecutive newlines
-    html = html.replace(/\n{3,}/g, '\n\n');
-
-    return html.trim();
   }
 }

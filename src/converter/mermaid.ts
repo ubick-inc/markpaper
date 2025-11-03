@@ -143,7 +143,7 @@ export class MermaidProcessor {
     }
 
     const page: Page = await this.browser.newPage();
-    
+
     try {
       // Set viewport
       await page.setViewport({
@@ -167,7 +167,7 @@ export class MermaidProcessor {
 
       // Take screenshot of the SVG
       const outputPath = join(outputDir, `${diagram.id}.png`);
-      await svgElement.screenshot({ 
+      await svgElement.screenshot({
         path: outputPath,
         omitBackground: (this.config.backgroundColor || 'transparent') === 'transparent'
       });
